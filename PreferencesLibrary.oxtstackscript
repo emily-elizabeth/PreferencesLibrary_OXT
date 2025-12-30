@@ -1,0 +1,89 @@
+﻿script "PreferencesLibrary"
+------------------------------------------------------------------------------------------------------------------------
+-- PREFERENCES
+------------------------------------------------------------------------------------------------------------------------
+
+local sPreferencesA
+
+
+on OpenStack
+   start using this stack
+end OpenStack
+
+
+/**
+* Opens the preference stack file.
+* If the file does not exist it will be created.
+*
+* On Mac OS X this will be stored in the user's preferences folder ( ~/Library/Preferences/ )
+* On Windows this be stored in the user's application data folder ( C:\Documents and Settings\$USER\Application Data\ )
+* On Linux this will be stored as a hidden file in the user's home folder ( ~/ )
+*/
+command PreferencesOpen applicationName, preferencesName
+   put preferencesName into sPreferencesA["fileName"]
+   if (the platform = "MacOS") then
+      put specialFolderPath("preferences") & "/" & applicationName into sPreferencesA["pathToFolder"]
+   else if (the platform = "Win32") then
+      put specialFolderPath("0x001A") & "/" & applicationName into sPreferencesA["pathToFolder"]
+   else
+      put specialFolderPath("home") & "/." & applicationName into sPreferencesA["pathToFolder"]
+   end if
+   
+   if (there is not a folder sPreferencesA["pathToFolder"]) then
+      create folder sPreferencesA["pathToFolder"]
+   end if
+   put sPreferencesA["pathToFolder"] & "/" & preferencesName into sPreferencesA["pathToFile"]
+   
+   if (there is not a file sPreferencesA["pathToFile"]) then
+      create invisible stack preferencesName
+      save it as sPreferencesA["pathToFile"]
+   else
+      go invisible to stack sPreferencesA["pathToFile"] in a new window
+   end if
+end PreferencesOpen
+
+
+command PreferencesClose
+   lock messages
+   delete stack sPreferencesA["pathToFile"]     --! removes the stack from memory; does not delete it
+   unlock messages
+end PreferencesClose
+
+
+
+/**
+* Message to save the preference file.
+*/
+command PreferencesSave
+   save stack sPreferencesA["pathToFile"]
+end PreferencesSave
+
+
+
+/**
+* Message to save and close the preference file.
+* Saves the preference file before closing.
+*/
+command PreferencesSaveAndClose
+   save stack sPreferencesA["pathToFile"]
+   delete stack sPreferencesA["pathToFile"]     --! removes the stack from memory; does not delete it
+end PreferencesSaveAndClose
+
+
+
+/**
+* Function to retrieve data from the preference file.
+*/
+function PreferencesGet pKey
+   return the pKey of stack sPreferencesA["pathToFile"]
+end PreferencesGet
+
+
+
+/**
+* Message to store data into the preference file.
+* Data is not saved to the preferences file until the file is closed.
+*/
+command PreferencesSet pKey, pValue
+   set the pKey of stack sPreferencesA["pathToFile"] to pValue
+end PreferencesSet
